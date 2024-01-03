@@ -1,0 +1,3 @@
+Regras, Backup do Banco de Dados e Restauração, Concatenação de Strings, Collation - Agrupamento de Caracteres ou Colação, Cláusula WITH TIES, VIEWS (Exibições) e Subconsultas (subqueries)
+
+CTE - Common Table Expression (subconsultas), Variáveis, Conversão de Tipos de Dados no SQL Server com Cast e Convert, Condicional IF / ELSE, Loop While, Stored Procedures, Funções Definidas pelo Usuário e Triggers 
