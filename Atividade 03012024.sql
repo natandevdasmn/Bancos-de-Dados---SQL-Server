@@ -17,11 +17,14 @@ CREATE TABLE EMPRESA(
 	INSCRI_ESTAD VARCHAR(45) NULL
 )
 
-CREATE TABLE EMPRESA_CNAE(
-	CNAE_PRINCIPAL BIT NOT NULL,
-	ID_EMPRESA INT FOREIGN KEY REFERENCES EMPRESA(ID_EMPRESA),
-	ID_CNAE SMALLINT FOREIGN KEY REFERENCES CNAE(ID_CNAE)
-)
+	ALTER TABLE EMPRESA_CNAE (
+		ID_EMPRESA_CNAE TINYINT NOT NULL PRIMARY KEY IDENTITY,
+		CNAE_PRINCIPAL BIT NULL,
+		ID_EMPRESA INT,
+		FOREIGN KEY (ID_EMPRESA) REFERENCES EMPRESA (ID_EMPRESA),
+		ID_CNAE SMALLINT,
+		FOREIGN KEY (ID_CNAE) REFERENCES CNAE (ID_CNAE)
+		)
 
 CREATE TABLE PARAMETRO(
 	ID_PARAMETRO TINYINT NOT NULL PRIMARY KEY,
@@ -78,7 +81,6 @@ VALUES
 ('Outros')
 go
 
-
 -----------------------------------------------------------------------------------------
 --INSERIR DADOS NA TABELA CNAE
 -----------------------------------------------------------------------------------------
@@ -93,11 +95,26 @@ CREATE OR ALTER PROC sp_InserirCNAE (
 	Objetivo..........: Inserir nova CNAE
 	Autor.............: SMN - Natanael
 	Data..............: 03/01/2024
-	Ex................: EXEC sp_InserirCNAE
+	Ex................: DECLARE @resultado TINYINT
+						EXEC @resultado = sp_InserirCNAE 'CNEA Teste5' -- SELECT * FROM CNAE
+						SELECT @resultado 
 	*/
 	BEGIN
-		INSERT INTO CNAE (NOME)
-			VALUES (@NOME)
+		-- VERIFICANDO SE NÃO CNAE NÃO EXISTE
+		IF NOT EXISTS (SELECT NOME FROM CNAE WHERE NOME = @NOME)
+			BEGIN
+				-- INSERINDO UM NOVO CNEA
+				INSERT INTO CNAE (NOME)
+					VALUES (@NOME)
+				-- RETORNANDO QUE O CNEA FOI CADASTRADO COM SUCESSO
+				RETURN 0
+			END
+		-- SE O CNAE EXISTER RETORNA 1
+		ELSE
+			-- RETORNANDO QUE CNAE NÃO FOI CADASTRADO, POIS JÁ ESTÁ CADASTRADO
+			BEGIN
+				RETURN 1
+			END
 	END
 GO
 
@@ -112,14 +129,29 @@ CREATE OR ALTER PROC sp_InserirTipoPremiacao (
 	/*
 	Documentação
 	Arquivo Fonte.....: Atividade_03012024.sql
-	Objetivo..........: Inserir nova CNAE
+	Objetivo..........: Inserir novo tipo de premiação
 	Autor.............: SMN - Natanael
-	Data..............: 03/01/2024
-	Ex................: EXEC sp_InserirCNAE
+	Data..............: 04/01/2024
+	Ex................: DECLARE @resultado TINYINT
+						EXEC @resultado = sp_InserirTipoPremiacao 'Tipo-Prêmio TESTE5'
+						SELECT @resultado 
 	*/
 	BEGIN
-		INSERT INTO TIPO_PREMIACAO (NOME)
-			VALUES (@NOME)
+		-- VERIFICANDO SE NÃO TIPO DE PREMIAÇÃO NÃO EXISTE
+		IF NOT EXISTS (SELECT NOME FROM TIPO_PREMIACAO WHERE NOME = @NOME)
+			BEGIN
+				-- INSERINDO UM NOVO TIPO DE PREMIAÇÃO
+				INSERT INTO TIPO_PREMIACAO (NOME)
+					VALUES (@NOME)
+				-- RETORNANDO QUE O TIPO DE PREMIAÇÃO FOI CADASTRADO COM SUCESSO
+				RETURN 0
+			END
+		-- SE O TIPO DE PREMIAÇÃO JÁ EXISTIR RETORNA 1
+		ELSE
+			BEGIN
+				-- RETORNANDO QUE TIPO DE PREMIAÇÃO NÃO FOI CADASTRADO, POIS JÁ ESTÁ CADASTRADO
+				RETURN 1
+			END
 	END
 GO
 
@@ -140,12 +172,66 @@ CREATE OR ALTER PROC sp_InserirEmpresa (
 	Arquivo Fonte.....: Atividade_03012024.sql
 	Objetivo..........: Inserir nova empresa
 	Autor.............: SMN - Natanael
-	Data..............: 03/01/2024
-	Ex................: EXEC sp_InserirEmpresa 'SMN JOÃO PASSOS', '475821', '365881', 11, 78146521
+	Data..............: 04/01/2024
+	Ex................: DECLARE @resultado TINYINT
+						EXEC @resultado = sp_InserirEmpresa 'Nome Empresa TESTE5', '55555', '55555', 55, 5555555
+						SELECT @resultado 
 	*/
 	BEGIN
-		INSERT INTO EMPRESA (NOME, CNPJ, INSCRI_MUNI, DDD, TELEFONE)
-			VALUES (@NomeEmpresa, @CNPJ, @INSCRI_MUNI, @DDD, @TELEFONE)
+		-- VERIFICANDO SE A EMPRESA NÃO EXISTE
+		IF NOT EXISTS (SELECT CNPJ FROM EMPRESA WHERE CNPJ = @CNPJ)
+			BEGIN
+				-- INSERINDO UMA NOVA EMPRESA
+				INSERT INTO EMPRESA (NOME, CNPJ, INSCRI_MUNI, DDD, TELEFONE)
+					VALUES (@NomeEmpresa, @CNPJ, @INSCRI_MUNI, @DDD, @TELEFONE)
+				-- RETORNANDO QUE A EMPRESA FOI CADASTRADA COM SUCESSO
+				RETURN 0
+			END
+		-- SE A EMPRESA JÁ EXISTIR RETORNA 1
+		ELSE
+			BEGIN
+				-- RETORNANDO QUE A EMPRESA NÃO FOI CADASTRADA, POIS JÁ ESTÁ CADASTRADA
+				RETURN 1
+			END
+	END
+GO
+
+-----------------------------------------------------------------------------------------
+--INSERIR DADOS NA TABELA EMPRESA_CNAE
+-----------------------------------------------------------------------------------------
+
+CREATE OR ALTER PROC sp_InserirEmpresaCNAE (
+	@CNAE_PRINCIPAL		BIT,
+	@ID_EMPRESA			INT,
+	@ID_CNAE			SMALLINT
+	)
+	AS
+	/*
+	Documentação
+	Arquivo Fonte.....: Atividade_03012024.sql
+	Objetivo..........: Inserir CNAE da empresa
+	Autor.............: SMN - Natanael
+	Data..............: 04/01/2024
+	Ex................: DECLARE @resultado TINYINT
+						EXEC @resultado = sp_InserirEmpresaCNAE 1, 3, 9
+						SELECT @resultado 
+	*/
+	BEGIN
+		-- VERIFICANDO SE NÃO EXISTE CADASTRO O CNAE VINCULADO A EMPRESA
+		IF NOT EXISTS (SELECT ID_EMPRESA FROM EMPRESA_CNAE WHERE ID_EMPRESA = @ID_EMPRESA) AND NOT EXISTS (SELECT ID_EMPRESA FROM EMPRESA_CNAE WHERE ID_CNAE = @ID_CNAE)
+			BEGIN
+				-- INSERINDO UMA NOVA EMPRESA_CNAE
+				INSERT INTO EMPRESA_CNAE (CNAE_PRINCIPAL, ID_EMPRESA, ID_CNAE)
+					VALUES (@CNAE_PRINCIPAL, @ID_EMPRESA, @ID_CNAE)
+				-- RETORNANDO QUE A EMPRESA FOI CADASTRADA COM SUCESSO
+				RETURN 0
+			END
+		-- SE A EMPRESA JÁ EXISTIR RETORNA 1
+		ELSE
+			BEGIN
+				-- RETORNANDO QUE A EMPRESA_CNAE NÃO FOI CADASTRADA, POIS JÁ ESTÁ CADASTRADA
+				RETURN 1
+			END
 	END
 GO
 
@@ -164,12 +250,27 @@ CREATE OR ALTER PROC sp_InserirParametro (
 	Arquivo Fonte.....: Atividade_03012024.sql
 	Objetivo..........: Inserir nova parâmetro
 	Autor.............: SMN - Natanael
-	Data..............: 03/01/2024
-	Ex................: EXEC sp_InserirParametro 3, 'Excelência', 500
+	Data..............: 04/01/2024
+	Ex................: DECLARE @resultado TINYINT
+						EXEC @resultado = sp_InserirParametro 3, 'Excelência', 500
+						SELECT @resultado 
 	*/
 	BEGIN
-		INSERT INTO PARAMETRO (ID_PARAMETRO, NOME, VALOR)
-			VALUES (@IdParametro, @Nome, @Valor)
+		-- VERIFICANDO SE O PARAMETRO NÃO EXISTE
+		IF NOT EXISTS (SELECT NOME FROM PARAMETRO WHERE NOME = @Nome)
+			BEGIN
+				-- INSERINDO UMA NOVO PARAMETRO
+				INSERT INTO PARAMETRO (ID_PARAMETRO, NOME, VALOR)
+					VALUES (@IdParametro, @Nome, @Valor)
+				-- RETORNANDO QUE O PARAMETRO FOI CADASTRADO COM SUCESSO
+				RETURN 0
+			END
+		-- SE A EMPRESA JÁ EXISTIR RETORNA 1
+		ELSE
+			BEGIN
+				-- RETORNANDO QUE O PARAMETRO NÃO FOI CADASTRADO, POIS JÁ ESTÁ CADASTRADO
+				RETURN 1
+			END
 	END
 GO
 
@@ -190,12 +291,28 @@ CREATE OR ALTER PROC sp_InserirPremiacao (
 	Arquivo Fonte.....: Atividade_03012024.sql
 	Objetivo..........: Inserir nova premiação
 	Autor.............: SMN - Natanael
-	Data..............: 03/01/2024
-	Ex................: EXEC sp_InserirPremiacao 1, 2, 2, 01, 2024
+	Data..............: 04/01/2024
+	Ex................: DECLARE @resultado TINYINT
+						EXEC @resultado = sp_InserirPremiacao 2, 3, 3, 01, 2024
+						SELECT @resultado 
 	*/
 	BEGIN
-		INSERT INTO PREMIACAO (ID_EMPRESA, ID_TIPO_PREMIACAO, ID_PARAMETRO, DATA_MES, DATA_ANO)
-			VALUES (@IdEmpresa, @IdTiPremiacao, @IdParametro, @MesPremio, @AnoPremio)
+		-- VERIFICANDO SE O PREMÊS NÃO FOI ATRIBUIDO A NENHUMA EMPRESA
+		IF NOT EXISTS (SELECT ID_PREMIACAO FROM PREMIACAO WHERE ID_PREMIACAO = @IdTiPremiacao) AND
+		NOT EXISTS (SELECT ID_PARAMETRO FROM PREMIACAO WHERE ID_PARAMETRO = @IdParametro) AND
+		NOT EXISTS (SELECT DATA_MES FROM PREMIACAO WHERE DATA_MES = @MesPremio) AND
+		NOT EXISTS (SELECT DATA_ANO FROM PREMIACAO WHERE DATA_ANO = @AnoPremio)
+			BEGIN
+				-- INSERINDO A PREMIAÇÃO DEVIDA
+				INSERT INTO PREMIACAO (ID_EMPRESA, ID_TIPO_PREMIACAO, ID_PARAMETRO, DATA_MES, DATA_ANO)
+					VALUES (@IdEmpresa, @IdTiPremiacao, @IdParametro, @MesPremio, @AnoPremio)
+			END
+		-- SE A EMPREMIAÇÃO JÁ FOI ATRIBUIDA A ALGUMA EMPRESA
+		ELSE
+			BEGIN
+				-- RETORNANDO QUE A PREMIAÇÃO NÃO FOI CADASTRA, POIS JÁ ESTÁ REGISTRADA
+				RETURN 1
+			END
 	END
 GO
 
@@ -204,9 +321,9 @@ GO
 -----------------------------------------------------------------------------------------
 
 CREATE OR ALTER FUNCTION fnc_CalcularValoresPremiacao (
-	@IdPremiacao SMALLINT 
+	@IdPremiacao SMALLINT -- TIPO DE PREMIAÇÃO
 	)
-	RETURNS DECIMAL
+	RETURNS DECIMAL(10, 3)
 	AS
 	/*
 	Documentação
@@ -218,28 +335,39 @@ CREATE OR ALTER FUNCTION fnc_CalcularValoresPremiacao (
 	*/
 	BEGIN
 		-- Declarando variáveis
-		DECLARE @ValorTotal DECIMAL(10, 3),
-				@ValorAntig	DECIMAL (10, 3),
-				@Acrescimo	INT
+		DECLARE @ValorTotal		DECIMAL(10, 3),
+				@ValorAntigo	DECIMAL (10, 3),
+				@Acrescimo		INT
 
-		-- Atribuindo o valor da variável @QuantEqui
-		SELECT @Acrescimo = PAR.valor, @ValorAntig = PRE.valor_premiacao_atual
-			FROM PARAMETRO AS PAR
-				INNER JOIN PREMIACAO AS PRE
-					ON PAR.ID_PARAMETRO = PRE.ID_PARAMETRO
-						WHERE ID_PREMIACAO = @IdPremiacao
 
+		-- Atribuindo o valor da variável @Acrescimo
+		SET @Acrescimo = (SELECT TOP 1 VALOR FROM PARAMETRO WHERE ID_PARAMETRO = (SELECT ID_PARAMETRO FROM PREMIACAO WHERE ID_PREMIACAO = @IdPremiacao))
+
+		-- Atribuindo o valor da variável @ValorAntigo
+		SET @ValorAntigo = (SELECT TOP 1 VALOR_PREMIACAO_ATUAL FROM PREMIACAO WHERE ID_PARAMETRO = (SELECT ID_PARAMETRO FROM PREMIACAO WHERE ID_PREMIACAO = 3))
+
+		IF @ValorAntigo IS NULL
+			SET @ValorTotal = @Acrescimo 
 		-- Atribuindo o valor da variável @ValorTotal
-		SELECT @ValorTotal = (@Acrescimo + @ValorAntig)
+		ELSE
+			SELECT @ValorTotal = (@Acrescimo + @ValorAntigo)
 
 		-- Retornando o valor da variável @ValorTotal
 		RETURN @ValorTotal
 	END
 GO
 
+INSERT INTO PREMIACAO (ID_EMPRESA, ID_PARAMETRO, ID_TIPO_PREMIACAO, DATA_MES, DATA_ANO)
+VALUES (3, 2, 2, 05, 2024)
+
+SELECT * FROM PARAMETRO
 SELECT * FROM PREMIACAO
 
--- Trigger para inserir a venda na tabela vendas pagamentos se o status ind_pag tiver 1, status pendente na tabela vendas pagamentos
+TRUNCATE TABLE PREMIACAO
+
+-----------------------------------------------------------------------------------------
+--TIGGRE 
+-----------------------------------------------------------------------------------------
 CREATE OR ALTER TRIGGER [dbo].[tgr_InserirValorTotalPremiacao]
 	ON [dbo].[premiacao]
 	AFTER INSERT
@@ -255,22 +383,27 @@ CREATE OR ALTER TRIGGER [dbo].[tgr_InserirValorTotalPremiacao]
 
 	BEGIN
 	-- Declarando variáveis
-	DECLARE @IdPremiI	INT
-	DECLARE @ValorAtu	DECIMAL
+	DECLARE @Empresa	INT,
+	 @IdParametro	INT,
+	 @ValorAtualizado	DECIMAL (10, 3)
 
 	-- Inserindo valor da variável @IdVenda
-	SELECT @IdPremiI = ID_PREMIACAO
+	SELECT @Empresa = ID_EMPRESA
 		FROM inserted
 
 	-- Inserindo valor da variável @IdVenda
-	SELECT @ValorAtu = (SELECT DBO.fnc_CalcularValoresPremiacao (@IdPremiI))
+	SELECT @IdParametro = ID_PARAMETRO
+		FROM inserted
+
+	-- Inserindo valor da variável @IdVenda
+	SELECT @ValorAtualizado = (SELECT DBO.fnc_CalcularValoresPremiacao (@Empresa, @IdParametro))
 
 	-- Validando o indíce de pagamento
 			-- Inserindo o id da venda na tabela VendaPagamento
 			BEGIN
 				UPDATE PREMIACAO
-					SET VALOR_PREMIACAO_ATUAL = @ValorAtu
-						WHERE  ID_PREMIACAO = @IdPremiI
+					SET VALOR_PREMIACAO_ATUAL = @ValorAtualizado
+						WHERE  ID_PREMIACAO = @Empresa
 			END
 	END
 GO
